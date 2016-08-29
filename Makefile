@@ -1,5 +1,5 @@
 CC = gcc-4.9
-CFLAGS = -O2 -fopenmp
+CFLAGS = -O2
 
 all: stream_c.exe
 
