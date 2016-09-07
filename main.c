@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+#include "sgx_urts.h"
+#include "stream_enclave_u.h"
+
+char * sgx_error_to_string(sgx_status_t err);
+
+int main() {
+    sgx_launch_token_t token = {0};
+    sgx_status_t ret = SGX_ERROR_UNEXPECTED;
+    sgx_enclave_id_t id = 0;
+    int updated = 0;
+    
+    /* Create the enclave.  Don't bother saving the token */
+    ret = sgx_create_enclave("stream_enclave.signed.so", SGX_DEBUG_FLAG, &token, &updated, &id, NULL);
+    if (ret != SGX_SUCCESS) {
+        printf("*** ERROR *** sgx_create_enclave: %s\n", sgx_error_to_string(ret));
+        return -1;
+    }
+
+    /* ECALL to the STREAM code */
+    ecall_Main_Loop(id); 
+
+    /* Destroy the enclave */
+    ret = sgx_destroy_enclave(id);
+    if (ret != SGX_SUCCESS) {
+        printf("*** ERROR *** sgx_destroy_enclave: %s\n", sgx_error_to_string(ret));
+        return -1;
+    }
+    
+    return 0;
+}
+
+char * sgx_error_to_string(sgx_status_t err) {
+    switch (err) {
+    case SGX_ERROR_UNEXPECTED: return "Unexpected error occurred."; 
+    case SGX_ERROR_INVALID_PARAMETER: return "Invalid parameter.";
+    case SGX_ERROR_OUT_OF_MEMORY: return "Out of memory.";
+    case SGX_ERROR_ENCLAVE_LOST: return "Power transition occurred.";
+    case SGX_ERROR_INVALID_STATE: return "Invalid state";
+
+    case SGX_ERROR_INVALID_FUNCTION: return "Invalid function";
+    case SGX_ERROR_OUT_OF_TCS: return "Out of TCS";
+    case SGX_ERROR_ENCLAVE_CRASHED: return "Enclave crashed";
+    case SGX_ERROR_ECALL_NOT_ALLOWED: return "ECALL not allowed";
+    case SGX_ERROR_OCALL_NOT_ALLOWED: return "OCALL not allowed";
+    case SGX_ERROR_STACK_OVERRUN: return "Undefined symbol";
+
+    case SGX_ERROR_UNDEFINED_SYMBOL: return "Undefined symbol";
+    case SGX_ERROR_INVALID_ENCLAVE: return "Invalid enclave image";
+    case SGX_ERROR_INVALID_ENCLAVE_ID: return "Invalid enclave identification";
+    case SGX_ERROR_INVALID_SIGNATURE: return "Invalid enclave signature";
+    case SGX_ERROR_NDEBUG_ENCLAVE: return "Enclave does not support debugging";
+    case SGX_ERROR_OUT_OF_EPC: return "Out of EPC memory";
+    case SGX_ERROR_NO_DEVICE: return "Invalid SGX device";
+    case SGX_ERROR_MEMORY_MAP_CONFLICT: return "Memory map conflicted";
+    case SGX_ERROR_INVALID_METADATA: return "Invalid enclave metadata";
+    case SGX_ERROR_DEVICE_BUSY: return "SGX device was busy";
+    case SGX_ERROR_INVALID_VERSION: return "Invalid enclave version";
+    case SGX_ERROR_MODE_INCOMPATIBLE: return "Incompatible mode";
+    case SGX_ERROR_ENCLAVE_FILE_ACCESS: return "Unable to open enclave file";
+    case SGX_ERROR_INVALID_MISC: return "Invalid misc";
+
+    case SGX_ERROR_MAC_MISMATCH: return "MAC mismatch";
+    case SGX_ERROR_INVALID_ATTRIBUTE: return "Invalid enclave attribute";
+    case SGX_ERROR_INVALID_CPUSVN: return "Invalid CPU SVN";
+    case SGX_ERROR_INVALID_ISVSVN: return "Invalid ISV SVN";
+    case SGX_ERROR_INVALID_KEYNAME: return "Invalid key name";
+
+    case SGX_ERROR_SERVICE_UNAVAILABLE: return "Service unavailable";
+    case SGX_ERROR_SERVICE_TIMEOUT: return "Service timeout";
+    case SGX_ERROR_AE_INVALID_EPIDBLOB:  return "Invalid EPID blob";
+    case SGX_ERROR_SERVICE_INVALID_PRIVILEGE:  return "Invalid privilege";
+    case SGX_ERROR_EPID_MEMBER_REVOKED: return "EPID member revoked";
+    case SGX_ERROR_UPDATE_NEEDED: return "Update needed";
+    case SGX_ERROR_NETWORK_FAILURE: return "Network failure";
+    case SGX_ERROR_AE_SESSION_INVALID: return "AE session invalid";
+    case SGX_ERROR_BUSY: return "Busy.  What's busy you ask?  ...";
+    case SGX_ERROR_MC_NOT_FOUND: return "MC not found";
+    case SGX_ERROR_MC_NO_ACCESS_RIGHT: return "MC no access right";
+    case SGX_ERROR_MC_USED_UP: return "MC used up";
+    case SGX_ERROR_MC_OVER_QUOTA: return "MC over quota";
+    case SGX_ERROR_KDF_MISMATCH: return "KDF mismatch";
+    }
+    return "Unknown error";
+}
+
+/*
+ * ocall_print_string is an OCALL forwarding function for printf.
+ * The enclave is responsible for validating str before calling
+ * ocall_print_string.
+ */
+void ocall_print_string(const char *str)
+{
+    printf("%s", str);
+}
