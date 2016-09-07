@@ -8,10 +8,15 @@ enclave {
 
     untrusted {
         /* 
-        * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
-        *  [in]: copy the string buffer to  outside.
-        *  [string]: specifies 'str' is a NULL terminated buffer.
-        */
+         * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
+         *  [in]: copy the string buffer to  outside.
+         *  [string]: specifies 'str' is a NULL terminated buffer.
+         */
         void ocall_print_string([in, string] const char *str);
+
+        /* 
+         * ocall_rdtsc - invokes OCALL to execute RDTSC.  SKL doesn't support RDTSC in enclave :(
+         */
+        uint64_t ocall_rdtsc();
     };
 };

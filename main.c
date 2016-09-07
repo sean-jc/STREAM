@@ -96,3 +96,10 @@ void ocall_print_string(const char *str)
 {
     printf("%s", str);
 }
+
+uint64_t ocall_rdtsc()
+{
+    uint64_t rax, rdx;
+    asm volatile("rdtsc" : "=a" (rax), "=d" (rdx));
+    return (rdx << 32) + rax;
+}

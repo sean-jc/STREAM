@@ -415,17 +415,23 @@ int checktick() {
 #define TSC_MHZ 3392.0
 #endif
 
+#ifdef RDTSC_IN_ENCLAVE
 static inline uint64_t rdtscp()
 {
     uint32_t aux;
     uint64_t rax, rdx;
-    asm volatile ( "rdtscp\n" : "=a" (rax), "=d" (rdx), "=c" (aux) : : );
+    asm volatile("rdtscp" : "=a" (rax), "=d" (rdx), "=c" (aux));
     return (rdx << 32) + rax;
 }
+#endif
 
 double mysecond() {
     uint64_t tsc;
+#ifdef RDTSC_IN_ENCLAVE
     tsc = rdtscp();
+#else
+	ocall_rdtsc(&tsc);
+#endif
     return (((double)tsc / (double)TSC_MHZ) * 1.e-6);
 }
 
