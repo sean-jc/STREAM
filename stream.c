@@ -411,8 +411,19 @@ int checktick() {
 	return(minDelta);
 }
 
+/*
+ * SKL features a fixed frequency TSC, meaning it is not affected by
+ * any power states, and can be used for accurately measuring elasped
+ * time in enclaves  This change is architectural and should apply to
+ * all future Intel processors.  SKL has a fixed core crystal running
+ * at 24MHz; the TSC_MHZ can be found in CPUID(0x15), which defines
+ * the TSC/clock ratio.  The default TSC_MHZ uses a ratio of 176/2.
+ *
+ * SKL also has an errata where RDTSC(P) #UDs in enclaves, and so we
+ * end up having to do an OCALL anyways...
+ */
 #ifndef TSC_MHZ
-#define TSC_MHZ 3392.0
+#define TSC_MHZ 2112.0
 #endif
 
 #ifdef RDTSC_IN_ENCLAVE

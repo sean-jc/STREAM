@@ -1,27 +1,41 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/time.h>
 
 #include "sgx_urts.h"
 #include "stream_enclave_u.h"
 
+#ifndef TSC_MHZ
+#define TSC_MHZ 2112.0
+#endif
+
 char * sgx_error_to_string(sgx_status_t err);
+uint64_t ocall_rdtsc();
+double gettime();
 
 int main() {
     sgx_launch_token_t token = {0};
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     sgx_enclave_id_t id = 0;
     int updated = 0;
+    double		start, create, stream, end;
+
+    start = gettime();
     
-    /* Create the enclave.  Don't bother saving the token */
+    /* Create the enclave.  Don't save the token so that the full create
+     * flow is always benchmarked.
+     */
     ret = sgx_create_enclave("stream_enclave.signed.so", SGX_DEBUG_FLAG, &token, &updated, &id, NULL);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_create_enclave: %s\n", sgx_error_to_string(ret));
         return -1;
     }
+    create = gettime();
 
     /* ECALL to the STREAM code */
-    ecall_Main_Loop(id); 
+    ecall_Main_Loop(id);
+    stream = gettime();
 
     /* Destroy the enclave */
     ret = sgx_destroy_enclave(id);
@@ -29,6 +43,13 @@ int main() {
         printf("*** ERROR *** sgx_destroy_enclave: %s\n", sgx_error_to_string(ret));
         return -1;
     }
+    end = gettime();
+
+    printf("Function    Time\n");
+    printf("Create      %11.6f\n", create - start);
+    printf("STREAM      %11.6f\n", stream - create);
+    printf("Destroy     %11.6f\n", end - stream);
+    printf("-------------------------------------------------------------\n");
     
     return 0;
 }
@@ -102,4 +123,9 @@ uint64_t ocall_rdtsc()
     uint64_t rax, rdx;
     asm volatile("rdtsc" : "=a" (rax), "=d" (rdx));
     return (rdx << 32) + rax;
+}
+
+double gettime()
+{
+    return (((double)ocall_rdtsc() / (double)TSC_MHZ) * 1.e-6);
 }
