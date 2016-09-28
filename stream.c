@@ -198,7 +198,7 @@ void printf(const char *fmt, ...)
 #define STREAM_TYPE double
 #endif
 
-static STREAM_TYPE	a[STREAM_ARRAY_SIZE+OFFSET], b[STREAM_ARRAY_SIZE+OFFSET], c[STREAM_ARRAY_SIZE+OFFSET];
+static STREAM_TYPE __unmeasured_aligned a[STREAM_ARRAY_SIZE+OFFSET], __unmeasured b[STREAM_ARRAY_SIZE+OFFSET], __unmeasured c[STREAM_ARRAY_SIZE+OFFSET];
 static double	avgtime[4] = {0}, maxtime[4] = {0}, mintime[4] = {FLT_MAX,FLT_MAX,FLT_MAX,FLT_MAX};
 static char	*label[4] = {"Copy:      ", "Scale:     ", "Add:       ", "Triad:     "};
 
