@@ -198,7 +198,7 @@ void printf(const char *fmt, ...)
 #define STREAM_TYPE double
 #endif
 
-static STREAM_TYPE	a[STREAM_ARRAY_SIZE+OFFSET], b[STREAM_ARRAY_SIZE+OFFSET], c[STREAM_ARRAY_SIZE+OFFSET];
+static STREAM_TYPE *a, *b, *c;
 static double	avgtime[4] = {0}, maxtime[4] = {0}, mintime[4] = {FLT_MAX,FLT_MAX,FLT_MAX,FLT_MAX};
 static char	*label[4] = {"Copy:      ", "Scale:     ", "Add:       ", "Triad:     "};
 
@@ -228,6 +228,14 @@ void ecall_Main_Loop() {
 	ssize_t		j;
 	STREAM_TYPE		scalar;
 	double		t, times[4][NTIMES];
+
+	a = malloc(sizeof(STREAM_TYPE) * (STREAM_ARRAY_SIZE+OFFSET));
+	b = malloc(sizeof(STREAM_TYPE) * (STREAM_ARRAY_SIZE+OFFSET));
+	c = malloc(sizeof(STREAM_TYPE) * (STREAM_ARRAY_SIZE+OFFSET));
+	if (a == 0 || b == 0 || c == 0) {
+		printf("*** ERROR *** - malloc failed\n");
+		return;
+	}
 
 	/* --- SETUP --- determine precision and check timing --- */
 
@@ -379,6 +387,10 @@ void ecall_Main_Loop() {
     /* --- Check Results --- */
     checkSTREAMresults();
     printf(HLINE);
+
+	free(c);
+	free(b);
+	free(a);
 }
 
 # define	M	20

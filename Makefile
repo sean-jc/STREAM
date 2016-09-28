@@ -40,7 +40,7 @@ SGX_ENCLAVE_LDFLAGS = -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles 
 #-lsgx_tstdcxx 
 STREAM_ARRAY_SIZE=0x300000
 STREAM_STACK_SIZE=0x4000
-STREAM_HEAP_SIZE=0
+STREAM_HEAP_SIZE=$(shell echo $$(($(STREAM_ARRAY_SIZE)*8*3+0x1000)))
 
 define STREAM_XML
 <EnclaveConfiguration>
