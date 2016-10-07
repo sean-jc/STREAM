@@ -1,7 +1,9 @@
+#include <assert.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "sgx_urts.h"
 #include "stream_enclave_u.h"
@@ -21,12 +23,21 @@ int main() {
     int updated = 0;
     double		start, create, stream, end;
 
+    char enclave[1024];
+    if (readlink ("/proc/self/exe", enclave, 1024) == -1)
+    {
+        printf("*** ERROR *** readlink(/proc/self/exe) failed\n");
+        return -1;
+    }
+    dirname(enclave);
+    strcat(enclave, "/stream_enclave.signed.so");
+
     start = gettime();
     
     /* Create the enclave.  Don't save the token so that the full create
      * flow is always benchmarked.
      */
-    ret = sgx_create_enclave("stream_enclave.signed.so", SGX_DEBUG_FLAG, &token, &updated, &id, NULL);
+    ret = sgx_create_enclave(enclave, SGX_DEBUG_FLAG, &token, &updated, &id, NULL);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_create_enclave: %s\n", sgx_error_to_string(ret));
         return -1;
