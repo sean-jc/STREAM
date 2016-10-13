@@ -33,7 +33,24 @@ SGX_ENCLAVE_LDFLAGS = -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles 
 	-Wl,--version-script=stream_enclave.lds
 
 #-lsgx_tstdcxx 
+STREAM_ARRAY_SIZE=0x300000
+STREAM_STACK_SIZE=0x4000
+STREAM_HEAP_SIZE=0
 
+define STREAM_XML
+<EnclaveConfiguration>
+  <ProdID>0</ProdID>
+  <ISVSVN>0</ISVSVN>
+  <StackMaxSize>$(STREAM_STACK_SIZE)</StackMaxSize>
+  <HeapMaxSize>$(STREAM_HEAP_SIZE)</HeapMaxSize>
+  <TCSNum>1</TCSNum>
+  <TCSPolicy>1</TCSPolicy>
+  <DisableDebug>0</DisableDebug>
+  <MiscSelect>0</MiscSelect>
+  <MiscMask>0xFFFFFFFF</MiscMask>
+</EnclaveConfiguration>
+endef
+export STREAM_XML
 
 .PHONY: all clean
 
@@ -51,10 +68,11 @@ stream_enclave_t.c: $(SGX_EDGER8R) stream_enclave.edl
 	$(SGX_EDGER8R) --trusted stream_enclave.edl --search-path . --search-path $(SGX_SDK)/include
 
 stream_enclave.so: stream.c stream_enclave_t.c
-	$(CC) $(CFLAGS) $(SGX_ENCLAVE_CFLAGS) -DSTREAM_ARRAY_SIZE=0x300000 $^ -o $@ $(SGX_ENCLAVE_LDFLAGS) 
+	$(CC) $(CFLAGS) $(SGX_ENCLAVE_CFLAGS) -DSTREAM_ARRAY_SIZE=$(STREAM_ARRAY_SIZE) $^ -o $@ $(SGX_ENCLAVE_LDFLAGS)
 
 stream_enclave.signed.so: stream_enclave.so
+	echo "$$STREAM_XML" > stream_enclave.xml
 	$(SGX_ENCLAVE_SIGNER) sign -key stream_key.pem -enclave $^ -out $@ -config stream_enclave.xml
 
 clean:
-	rm -f stream_sgx *.o *.so stream_enclave_t.* stream_enclave_u.*
+	rm -f stream_sgx *.o *.so stream_enclave_t.* stream_enclave_u.* stream_enclave.xml
