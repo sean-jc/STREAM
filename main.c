@@ -17,30 +17,47 @@ uint64_t ocall_rdtsc();
 double gettime();
 
 int main() {
-    sgx_launch_token_t token = {0};
+    int updated = 0;
+    sgx_launch_token_t launch_token = {0};
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     sgx_enclave_id_t id = 0;
-    int updated = 0;
     double		start, create, stream, end;
 
-    char enclave[1024];
+    FILE *f;
+    size_t num_bytes;
+    char enclave[1024], token[1024];
+
     if (readlink ("/proc/self/exe", enclave, 1024) == -1)
     {
         printf("*** ERROR *** readlink(/proc/self/exe) failed\n");
         return -1;
     }
     dirname(enclave);
+    strcpy(token, enclave);
+
     strcat(enclave, "/stream_enclave.signed.so");
+    strcat(token, "/stream_enclave.token");
+
+    f = fopen(token, "rb");
+    if (f) {
+        num_bytes = fread(launch_token, 1, sizeof(sgx_launch_token_t), f);
+        fclose(f);
+
+        if (num_bytes != sizeof(sgx_launch_token_t)) {
+            printf("*** ERROR *** cannot read launch token from: %s\n", token);
+            return -2;
+        }
+    }
 
     start = gettime();
     
     /* Create the enclave.  Don't save the token so that the full create
      * flow is always benchmarked.
      */
-    ret = sgx_create_enclave(enclave, SGX_DEBUG_FLAG, &token, &updated, &id, NULL);
+    ret = sgx_create_enclave(enclave, SGX_DEBUG_FLAG, &launch_token, &updated, &id, NULL);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_create_enclave: %s\n", sgx_error_to_string(ret));
-        return -1;
+        return -3;
     }
     create = gettime();
 
@@ -52,7 +69,7 @@ int main() {
     ret = sgx_destroy_enclave(id);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_destroy_enclave: %s\n", sgx_error_to_string(ret));
-        return -1;
+        return -4;
     }
     end = gettime();
 
@@ -61,7 +78,22 @@ int main() {
     printf("STREAM      %11.6f\n", stream - create);
     printf("Destroy     %11.6f\n", end - stream);
     printf("-------------------------------------------------------------\n");
-    
+
+    if (updated) {
+
+    }
+    /* reopen the file with write capablity */
+    f = fopen(token, "wb");
+    if (f) {
+        num_bytes = fwrite(launch_token, 1, sizeof(sgx_launch_token_t), f);
+        fclose(f);
+
+        if (num_bytes != sizeof(sgx_launch_token_t)) {
+            printf("*** ERROR *** cannot save launch token to: %s\n", token);
+            return -5;
+        }
+    }
+
     return 0;
 }
 
