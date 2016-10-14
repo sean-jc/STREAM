@@ -1,5 +1,10 @@
 CC = gcc
-CFLAGS = -O2 -m64
+
+ifeq ($(SGX_DEBUG), 1)
+	CFLAGS = -ggdb -DDEBUG -UNDEBUG -m64
+else
+	CFLAGS = -O2 -m64
+endif
 
 SGX_SDK ?= /opt/intel/sgxsdk
 SGX_MODE ?= HW
