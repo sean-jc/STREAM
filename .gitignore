@@ -1,5 +1,6 @@
 *.o
 *.so
+*.token
 stream_enclave_t.*
 stream_enclave_u.*
 stream_enclave.xml

@@ -1,8 +1,11 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "sgx_urts.h"
@@ -17,30 +20,50 @@ uint64_t ocall_rdtsc();
 double gettime();
 
 int main() {
-    sgx_launch_token_t token = {0};
+    int updated = 0;
+    sgx_launch_token_t launch_token = {0};
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     sgx_enclave_id_t id = 0;
-    int updated = 0;
     double		start, create, stream, end;
 
-    char enclave[1024];
+    int fd;
+    ssize_t num_bytes;
+    char enclave[1024], token[1024];
+
     if (readlink ("/proc/self/exe", enclave, 1024) == -1)
     {
         printf("*** ERROR *** readlink(/proc/self/exe) failed\n");
         return -1;
     }
     dirname(enclave);
+    strcpy(token, enclave);
+
     strcat(enclave, "/stream_enclave.signed.so");
+    strcat(token, "/stream_enclave.token");
+
+    fd = open(token, O_RDONLY);
+    if (fd != -1) {
+        num_bytes = read(fd, launch_token, sizeof(sgx_launch_token_t));
+        close(fd);
+
+        /* Ignore read failure, we intentionally don't check for a
+         * non-existent file as stat and open cannot be run in parallel.
+         */
+        if (num_bytes != -1 && num_bytes != sizeof(sgx_launch_token_t)) {
+            printf("*** ERROR *** cannot read launch token from: %s\n", token);
+            return -2;
+        }
+    }
 
     start = gettime();
     
     /* Create the enclave.  Don't save the token so that the full create
      * flow is always benchmarked.
      */
-    ret = sgx_create_enclave(enclave, SGX_DEBUG_FLAG, &token, &updated, &id, NULL);
+    ret = sgx_create_enclave(enclave, SGX_DEBUG_FLAG, &launch_token, &updated, &id, NULL);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_create_enclave: %s\n", sgx_error_to_string(ret));
-        return -1;
+        return -3;
     }
     create = gettime();
 
@@ -52,7 +75,7 @@ int main() {
     ret = sgx_destroy_enclave(id);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_destroy_enclave: %s\n", sgx_error_to_string(ret));
-        return -1;
+        return -4;
     }
     end = gettime();
 
@@ -61,7 +84,19 @@ int main() {
     printf("STREAM      %11.6f\n", stream - create);
     printf("Destroy     %11.6f\n", end - stream);
     printf("-------------------------------------------------------------\n");
-    
+
+    if (updated) {
+        fd = creat(token, 0660);
+        if (fd) {
+            num_bytes = write(fd, launch_token, sizeof(sgx_launch_token_t));
+            close(fd);
+
+            if (num_bytes != sizeof(sgx_launch_token_t)) {
+                printf("*** ERROR *** cannot save launch token to: %s\n", token);
+                return -5;
+            }
+        }
+    }
     return 0;
 }
 
