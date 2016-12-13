@@ -20,6 +20,9 @@ ifeq ($(SGX_MODE), SIM)
 else
 	SGX_TRTS = sgx_trts
 	SGX_URTS = sgx_urts
+ifeq ($(SGX_STATIC), 1)
+	SGX_AE   = sgx_ae
+endif
 endif
 SGX_CRYPTO = sgx_tcrypto
 
@@ -27,6 +30,10 @@ SGX_MAIN_CFLAGS =  -fPIC -Wno-attributes -I$(SGX_SDK)/include
 SGX_ENCLAVE_CFLAGS = -nostdinc -fvisibility=hidden -fpie -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc
 
 SGX_MAIN_LDFLAGS = -L$(SGX_LIBRARY_PATH) -l$(SGX_URTS) -lpthread
+ifeq ($(SGX_STATIC), 1)
+	SGX_MAIN_LDFLAGS += -l$(SGX_AE)
+endif
+
 SGX_ENCLAVE_LDFLAGS = -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(SGX_TRTS) -Wl,--no-whole-archive \
 	-Wl,--start-group -lsgx_tstdc -l$(SGX_CRYPTO) -Wl,--end-group \
