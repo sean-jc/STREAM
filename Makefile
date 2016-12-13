@@ -17,11 +17,9 @@ SGX_EDGER8R = $(SGX_SDK)/bin/x64/sgx_edger8r
 ifeq ($(SGX_MODE), SIM)
 	SGX_TRTS = sgx_trts_sim
 	SGX_URTS = sgx_urts_sim
-	SGX_SERVICE = sgx_tservice_sim
 else
 	SGX_TRTS = sgx_trts
 	SGX_URTS = sgx_urts
-	SGX_SERVICE = sgx_tservice
 endif
 SGX_CRYPTO = sgx_tcrypto
 
@@ -31,7 +29,7 @@ SGX_ENCLAVE_CFLAGS = -nostdinc -fvisibility=hidden -fpie -I$(SGX_SDK)/include -I
 SGX_MAIN_LDFLAGS = -L$(SGX_LIBRARY_PATH) -l$(SGX_URTS) -lpthread
 SGX_ENCLAVE_LDFLAGS = -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(SGX_TRTS) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -l$(SGX_CRYPTO) -l$(SGX_SERVICE) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -l$(SGX_CRYPTO) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
