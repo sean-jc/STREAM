@@ -68,14 +68,18 @@ int main() {
     create = gettime();
 
     /* ECALL to the STREAM code */
-    ecall_Main_Loop(id);
+    ret = ecall_Main_Loop(id);
+    if (ret != SGX_SUCCESS) {
+        printf("*** ERROR *** ecall_Main_Loop: %s\n", sgx_error_to_string(ret));
+        return -4;
+    }
     stream = gettime();
 
     /* Destroy the enclave */
     ret = sgx_destroy_enclave(id);
     if (ret != SGX_SUCCESS) {
         printf("*** ERROR *** sgx_destroy_enclave: %s\n", sgx_error_to_string(ret));
-        return -4;
+        return -5;
     }
     end = gettime();
 
@@ -93,7 +97,7 @@ int main() {
 
             if (num_bytes != sizeof(sgx_launch_token_t)) {
                 printf("*** ERROR *** cannot save launch token to: %s\n", token);
-                return -5;
+                return -6;
             }
         }
     }
